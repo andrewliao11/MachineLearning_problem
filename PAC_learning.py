@@ -81,6 +81,36 @@ def find_hs(data, label, verbose=True):
 		
     return [[ll_x, ll_y], [ur_x, ur_y]]
 
+
+def sample_and_find_hs(args, v, u, verbose=False):
+
+    m = ceil(4/args.eplison*np.log(4/args.delta))
+    if verbose:
+        print "choose %d samples" % int(m)
+    S = get_multivariate_normal(args, m)
+
+    init = True
+    for d in S:
+	if is_in_rectangle(d, v, u) and init:
+            ll_x = d[0]
+            ll_y = d[1]
+            ur_x = d[0]
+            ur_y = d[1]
+            init = False
+        if is_in_rectangle(d, v, u):
+            if not is_in_rectangle(d, [ll_x,ll_y], [ur_x,ur_y]):
+                if d[0]<ll_x:
+                    ll_x = d[0]
+                if d[1]<ll_y:
+                    ll_y = d[1]
+                if d[0]>ur_x:
+                    ur_x = d[0]
+                if d[1]>ur_y:
+                    ur_y = d[1]
+
+    return [[ll_x, ll_y], [ur_x, ur_y]]
+    
+
 def test_generalization_error(args, v, u, hs, verbose=True):
 
     M_eplison = ceil(pow((19.453/args.eplison),2))
@@ -121,10 +151,10 @@ if __name__ == '__main__':
     if args.verification:
 	miss = 0
 	for i in tqdm(range(int(10/args.delta))):
-	    data, label = sample_data(args, v, u, verbose=False)
-	    hs = find_hs(data, label, verbose=False)
+	    #data, label = sample_data(args, v, u, verbose=False)
+	    #hs = find_hs(data, label, verbose=False)
+	    hs = sample_and_find_hs(args, v, u, verbose=False)
 	    err = test_generalization_error(args, v, u, hs, verbose=False)
-	    print err
 	    if err > args.eplison:
 		miss += 1
 	print "%d times of estimation with generation error larger than eplison" % miss
@@ -139,5 +169,5 @@ if __name__ == '__main__':
     	plt.gca().add_patch(patches.Rectangle(hs[0], hs[1][0]-hs[0][0], hs[1][1]-hs[0][1], fill=None, edgecolor='g'))
     	plt.savefig('hs.png')
     	plt.close()
-    	test_generalization_error(args, v, u, hs)
+    	Rhs_err = test_generalization_error(args, v, u, hs)
 	print "R(hs) = %f" % Rhs_err
